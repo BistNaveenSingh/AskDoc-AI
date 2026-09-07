@@ -42,4 +42,20 @@
 
 ## Traceability
 
-<!-- Managed by gsd-roadmapper -->
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| API-01 | Phase 5 | ⏳ Pending |
+| API-02 | Phase 5 | ⏳ Pending |
+| API-03 | Phase 5 | ⏳ Pending |
+| DOC-01 | Phase 2 | ⏳ Pending |
+| DOC-02 | Phase 2 | ⏳ Pending |
+| DOC-03 | Phase 2 | ⏳ Pending |
+| DOC-04 | Phase 2 | ⏳ Pending |
+| RET-01 | Phase 3 | ⏳ Pending |
+| RET-02 | Phase 3 | ⏳ Pending |
+| RET-03 | Phase 4 | ⏳ Pending |
+| GEN-01 | Phase 4 | ⏳ Pending |
+| GEN-02 | Phase 4 | ⏳ Pending |
+| GEN-03 | Phase 4 | ⏳ Pending |
+| UI-01 | Phase 6 | ⏳ Pending |
+| UI-02 | Phase 6 | ⏳ Pending |
