@@ -1,5 +1,6 @@
 langchain
 langchain-openai
+langchain-google-genai
 langchain-community
 langchain-text-splitters
 pypdf
@@ -11,3 +12,6 @@ streamlit
 python-dotenv
 pydantic
 requests
+gTTS
+beautifulsoup4
+python-docx

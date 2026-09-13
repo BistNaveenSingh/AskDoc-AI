@@ -1,17 +1,26 @@
 import os
 from typing import List
 from langchain_core.documents import Document
-from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 
 # Ensure the db directory exists relative to this file
 DB_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "db", "faiss_index")
 
-def get_embeddings_model() -> OpenAIEmbeddings:
+def get_embeddings_model():
     """
-    Initializes and returns the OpenAI embeddings model.
+    Initializes and returns the embeddings model.
+    Prioritizes Gemini (text-embedding-004) if GEMINI_API_KEY or GOOGLE_API_KEY is found,
+    otherwise falls back to OpenAI (text-embedding-3-small).
     """
-    # Requires OPENAI_API_KEY to be set in environment variables
+    gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if gemini_key:
+        from langchain_google_genai import GoogleGenerativeAIEmbeddings
+        return GoogleGenerativeAIEmbeddings(
+            model="models/gemini-embedding-001",
+            google_api_key=gemini_key
+        )
+    
+    from langchain_openai import OpenAIEmbeddings
     return OpenAIEmbeddings(model="text-embedding-3-small")
 
 def add_documents_to_store(chunks: List[Document], persist_directory: str = DB_PATH):

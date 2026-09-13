@@ -26,3 +26,6 @@ Thumbs.db
 
 # Planning artifacts (optional — keep if you want GSD tracking in git)
 # .planning/
+
+.agents/
+.claude/

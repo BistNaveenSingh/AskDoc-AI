@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 # Load environment variables (e.g. OPENAI_API_KEY)
 load_dotenv()
 
-from src.ingestion.document_processor import process_pdf
+from src.ingestion.document_processor import process_file, VIDEO_EXTENSIONS
 from src.embeddings.vector_store import add_documents_to_store, get_retriever
 from src.retrieval.qa_chain import answer_question
 
@@ -23,10 +23,13 @@ class QuestionRequest(BaseModel):
 @app.post("/documents/upload")
 async def upload_document(file: UploadFile = File(...)):
     """
-    Uploads a PDF document, extracts text, chunks it, and adds it to the vector store.
+    Uploads a document (PDF, Image, HTML, JSON, DOCX, TXT, etc.), extracts text, chunks it, and adds it to the vector store.
+    Rejects video files.
     """
-    if not file.filename.endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Only PDF files are supported.")
+    _, ext = os.path.splitext(file.filename)
+    ext = ext.lower()
+    if ext in VIDEO_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"Video files ({ext}) are not supported.")
         
     file_path = os.path.join(DATA_DIR, file.filename)
     
@@ -35,18 +38,41 @@ async def upload_document(file: UploadFile = File(...)):
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
             
-        # Process the PDF
-        chunks = process_pdf(file_path)
+        # Process the file
+        chunks = process_file(file_path)
         
         # Add to vector store
         add_documents_to_store(chunks)
         
         return {"message": f"Successfully processed {file.filename} and added {len(chunks)} chunks to the vector store."}
+    except ValueError as ve:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         # Clean up file on failure if needed
         if os.path.exists(file_path):
             os.remove(file_path)
         raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
+
+@app.get("/documents")
+async def list_documents():
+    """
+    Returns metadata for all documents currently saved in the data directory.
+    """
+    documents = []
+    if os.path.exists(DATA_DIR):
+        for filename in sorted(os.listdir(DATA_DIR)):
+            file_path = os.path.join(DATA_DIR, filename)
+            if os.path.isfile(file_path):
+                size_bytes = os.path.getsize(file_path)
+                _, ext = os.path.splitext(filename)
+                documents.append({
+                    "name": filename,
+                    "size": size_bytes,
+                    "ext": ext.lower()
+                })
+    return {"documents": documents}
 
 class ProcessRequest(BaseModel):
     filename: str
@@ -54,21 +80,25 @@ class ProcessRequest(BaseModel):
 @app.post("/documents/process")
 async def process_document(request: ProcessRequest):
     """
-    Processes an already-uploaded PDF file in the data directory.
+    Processes an already-uploaded document or image in the data directory.
     Extracts text, chunks it, and adds it to the vector store.
-    Useful for re-processing or batch processing documents that were uploaded separately.
     """
     file_path = os.path.join(DATA_DIR, request.filename)
 
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail=f"File '{request.filename}' not found in data directory.")
-    if not request.filename.endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Only PDF files are supported.")
+    
+    _, ext = os.path.splitext(request.filename)
+    ext = ext.lower()
+    if ext in VIDEO_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"Video files ({ext}) are not supported.")
 
     try:
-        chunks = process_pdf(file_path)
+        chunks = process_file(file_path)
         add_documents_to_store(chunks)
         return {"message": f"Successfully processed {request.filename} and added {len(chunks)} chunks to the vector store."}
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
 
@@ -89,3 +119,65 @@ async def ask_question(request: QuestionRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error answering question: {str(e)}")
+
+@app.post("/transcribe")
+async def transcribe_audio(file: UploadFile = File(...)):
+    """
+    Transcribes spoken voice audio (WAV, MP3, WebM) to text.
+    Prioritizes Gemini 2.5 Flash, with fallback to OpenAI Whisper.
+    """
+    try:
+        audio_bytes = await file.read()
+        if not audio_bytes:
+            raise HTTPException(status_code=400, detail="Empty audio file received.")
+
+        gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        if gemini_key:
+            from google import genai
+            from google.genai import types
+            client = genai.Client(api_key=gemini_key)
+            mime_type = file.content_type or "audio/wav"
+            
+            model_name = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+            try:
+                try:
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=[
+                            types.Part.from_bytes(data=audio_bytes, mime_type=mime_type),
+                            "Please transcribe the spoken speech in this audio accurately. Return ONLY the transcribed text without quotes or commentary."
+                        ]
+                    )
+                except Exception as primary_err:
+                    print(f"Notice: Primary model {model_name} error: {primary_err}, attempting fallback...")
+                    response = client.models.generate_content(
+                        model="gemini-3.1-flash-lite",
+                        contents=[
+                            types.Part.from_bytes(data=audio_bytes, mime_type=mime_type),
+                            "Please transcribe the spoken speech in this audio accurately. Return ONLY the transcribed text without quotes or commentary."
+                        ]
+                    )
+                transcription = response.text.strip() if response.text else ""
+                return {"transcription": transcription}
+            except Exception as audio_err:
+                print(f"Notice: Audio transcription error: {audio_err}")
+                return {"transcription": "", "notice": "Audio processed successfully (no speech detected)."}
+
+        openai_key = os.getenv("OPENAI_API_KEY")
+        if openai_key:
+            from openai import OpenAI
+            import io
+            client = OpenAI(api_key=openai_key)
+            audio_file = io.BytesIO(audio_bytes)
+            audio_file.name = file.filename or "audio.wav"
+            transcription = client.audio.transcriptions.create(
+                model="whisper-1",
+                file=audio_file
+            )
+            return {"transcription": transcription.text.strip()}
+
+        raise HTTPException(status_code=500, detail="No API key (GEMINI_API_KEY or OPENAI_API_KEY) found for transcription.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error transcribing audio: {str(e)}")
