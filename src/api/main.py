@@ -17,6 +17,12 @@ app = FastAPI(title="AskDoc AI API", description="AI-Powered Document Question A
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 
+@app.get("/health")
+async def health_check():
+    """Health check endpoint to verify the API is running."""
+    return {"status": "ok", "service": "AskDoc AI"}
+
+
 class QuestionRequest(BaseModel):
     question: str
 

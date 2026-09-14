@@ -22,9 +22,10 @@ if "tour_step" not in st.session_state:
     st.session_state.tour_step = 0
 if "tour_active" not in st.session_state:
     st.session_state.tour_active = False
-
 if "uploader_key" not in st.session_state:
     st.session_state.uploader_key = 0
+if "thinking" not in st.session_state:
+    st.session_state.thinking = False
 
 def get_indexed_documents():
     """Fetches list of all documents currently saved and indexed in the knowledge base."""
@@ -48,8 +49,6 @@ def get_file_symbol_badge(filename: str, ext: str):
     ext = ext.lower()
     if ext in [".pdf"]:
         return "[PDF]", "#38bdf8"
-    elif ext in [".png", ".jpg", ".jpeg", ".webp", ".bmp"]:
-        return "[IMG]", "#f43f5e"
     elif ext in [".docx", ".doc"]:
         return "[DOC]", "#60a5fa"
     elif ext in [".csv", ".xlsx", ".xls"]:
@@ -60,14 +59,32 @@ def get_file_symbol_badge(filename: str, ext: str):
         return "[TXT]", "#94a3b8"
 
 
-
 def submit_query(prompt_text: str):
-    """Sends user question to the backend and records answer & sources in session state."""
+    """Sends user question to the backend and records answer & sources in session state.
+    Includes chat history for context-aware follow-up questions."""
     if not prompt_text or not prompt_text.strip():
         return
     st.session_state.messages.append({"role": "user", "content": prompt_text.strip()})
+    st.session_state.thinking = True
+
+    # Build chat history context from recent messages (last 10 exchanges)
+    history_messages = st.session_state.messages[:-1]  # Exclude the current question
+    history_context = ""
+    recent = history_messages[-20:]  # Last 10 pairs
+    if recent:
+        history_parts = []
+        for msg in recent:
+            role_label = "User" if msg["role"] == "user" else "Assistant"
+            history_parts.append(f"{role_label}: {msg['content'][:500]}")
+        history_context = "\n".join(history_parts)
+
+    # Prepend history context to the question so the LLM has memory
+    question_with_context = prompt_text.strip()
+    if history_context:
+        question_with_context = f"[CONVERSATION HISTORY]\n{history_context}\n[END HISTORY]\n\nCurrent question: {prompt_text.strip()}"
+
     try:
-        response = requests.post(f"{API_URL}/ask", json={"question": prompt_text.strip()}, timeout=60)
+        response = requests.post(f"{API_URL}/ask", json={"question": question_with_context}, timeout=120)
         if response.status_code == 200:
             data = response.json()
             st.session_state.messages.append({
@@ -86,53 +103,12 @@ def submit_query(prompt_text: str):
             "role": "assistant",
             "content": f"Connection error: {e}"
         })
+    finally:
+        st.session_state.thinking = False
 
 # --- Custom ChatGPT Minimalist Theme & UI Polish ---
 st.markdown(
     """
-    <style>
-    /* CSS-only Splash Screen to prevent FOUC / theme lag */
-    @keyframes fadeOutAndHide {
-        0% { opacity: 1; visibility: visible; }
-        80% { opacity: 1; visibility: visible; }
-        100% { opacity: 0; visibility: hidden; }
-    }
-    
-    @keyframes spin { 
-        0% { transform: rotate(0deg); } 
-        100% { transform: rotate(360deg); } 
-    }
-
-    #splash-screen {
-        position: fixed;
-        top: 0; left: 0; width: 100vw; height: 100vh;
-        background-color: #212121;
-        z-index: 9999999;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        color: #ececec;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-        animation: fadeOutAndHide 1.5s forwards;
-        pointer-events: none;
-    }
-
-    .splash-loader {
-        border: 3px solid rgba(255, 255, 255, 0.1);
-        border-top: 3px solid #ececec;
-        border-radius: 50%;
-        width: 40px; height: 40px;
-        animation: spin 1s linear infinite;
-        margin-bottom: 20px;
-    }
-    </style>
-    
-    <div id="splash-screen">
-        <div class="splash-loader"></div>
-        <div style="font-size: 1.2rem; font-weight: 500; letter-spacing: 0.5px;">Loading AskDoc AI...</div>
-    </div>
-    
     <style>
     /* Dark ChatGPT Minimalist Palette */
     .stApp {
@@ -347,6 +323,7 @@ st.markdown(
         padding: 6px 12px !important;
         white-space: normal !important;
     }
+
     /* ChatGPT-style Assistant Action Bar */
     .assistant-action-bar {
         display: flex !important;
@@ -394,6 +371,37 @@ st.markdown(
         50% { opacity: 0.6; transform: scale(0.92); }
     }
 
+    /* ========== THINKING ANIMATION ========== */
+    @keyframes thinking-dot {
+        0%, 20% { opacity: 0.2; transform: translateY(0); }
+        50% { opacity: 1; transform: translateY(-4px); }
+        80%, 100% { opacity: 0.2; transform: translateY(0); }
+    }
+    .thinking-indicator {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 0;
+    }
+    .thinking-dots {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+    }
+    .thinking-dots span {
+        width: 8px;
+        height: 8px;
+        background: #10a37f;
+        border-radius: 50%;
+        animation: thinking-dot 1.4s ease-in-out infinite;
+    }
+    .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+    .thinking-label {
+        font-size: 0.88rem;
+        color: #8e8ea0;
+        font-style: italic;
+    }
 
     /* ========================================================
        SEARCH BAR / CHAT INPUT UI (True ChatGPT Pill Design)
@@ -562,8 +570,7 @@ def show_tutorial_dialog():
         st.markdown(
             "Use the **Add Files** card in the left sidebar to upload documents.\n\n"
             "- Supports **PDF, DOCX, XLSX, CSV, JSON, HTML, and Text**.\n"
-            "- Also supports **Images & Diagrams** with automatic Vision OCR extraction.\n"
-            "- *Videos are strictly excluded*."
+            "- *Videos and images are excluded*."
         )
     elif step == 1:
         st.markdown("### 2. Ask Questions or Speak")
@@ -577,7 +584,8 @@ def show_tutorial_dialog():
         st.markdown(
             "AskDoc AI guarantees zero hallucination by strictly referencing your documents.\n\n"
             "- Inspect exact document names and page numbers in **Sources & Citations**.\n"
-            "- Click **Listen** at the bottom of any assistant answer to hear it read aloud."
+            "- Click **Listen** at the bottom of any assistant answer to hear it read aloud.\n"
+            "- The AI **remembers your conversation** — ask follow-up questions naturally."
         )
 
     col_prev, col_next, col_skip = st.columns([2, 3, 2])
@@ -594,24 +602,22 @@ def show_tutorial_dialog():
         else:
             if st.button("Finish Tour ✓", type="primary", key="tour_finish"):
                 st.session_state.tour_active = False
-                st.html("<script>localStorage.setItem('askdoc_tour_seen', 'true');</script>", unsafe_allow_javascript=True)
                 st.rerun()
     with col_skip:
         if st.button("Skip Tour ✕", key="tour_skip"):
             st.session_state.tour_active = False
-            st.html("<script>localStorage.setItem('askdoc_tour_seen', 'true');</script>", unsafe_allow_javascript=True)
             st.rerun()
 
 # Trigger tour dialog if active
 if st.session_state.tour_active:
     show_tutorial_dialog()
 
-# --- SIDEBAR: "Add Files" Session (Green Box Only, Red Box Deleted) ---
+# --- SIDEBAR: "Add Files" Session ---
 with st.sidebar:
     st.markdown("<h3 style='margin-bottom: 2px; color: #ececec; font-weight: 600;'>Add Files</h3>", unsafe_allow_html=True)
-    st.markdown("<p style='font-size: 0.78rem; color: #8e8ea0; margin-bottom: 12px;'>PDF, Images, Office Docs, CSV, JSON, HTML (No videos)</p>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size: 0.78rem; color: #8e8ea0; margin-bottom: 12px;'>PDF, Office Docs, CSV, JSON, HTML, Text (No images or videos)</p>", unsafe_allow_html=True)
     
-    # GREEN BOX: Sleek Reference Dropzone Card (Native invisible overlay sits on top)
+    # Sleek Reference Dropzone Card (Native invisible overlay sits on top)
     st.markdown(
         """
         <div class="sidebar-upload-card" id="sidebar-upload-card" title="Click to browse files or drag and drop">
@@ -623,7 +629,7 @@ with st.sidebar:
                 </svg>
             </div>
             <div class="sidebar-upload-title">Click to upload or drop files</div>
-            <div class="sidebar-upload-sub">PDF, DOC/DOCX, XLSX, CSV, PNG, JPG</div>
+            <div class="sidebar-upload-sub">PDF, DOC/DOCX, XLSX, CSV, JSON, HTML, TXT</div>
             <div class="sidebar-browse-pill" id="sidebar-browse-btn">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" y1="19" x2="12" y2="5"></line>
@@ -637,9 +643,10 @@ with st.sidebar:
     )
     
     # NATIVE UPLOADER: Rendered right after card, overlayed on top via CSS negative margin
+    # NOTE: Images removed from accepted types per user request
     uploaded_files = st.file_uploader(
         "Upload files",
-        type=["pdf", "png", "jpg", "jpeg", "webp", "bmp", "html", "htm", "json", "docx", "doc", "txt", "md", "csv", "xlsx", "xls", "py", "log"],
+        type=["pdf", "html", "htm", "json", "docx", "doc", "txt", "md", "csv", "xlsx", "xls", "py", "log"],
         accept_multiple_files=True,
         label_visibility="collapsed",
         key=f"sidebar_files_{st.session_state.uploader_key}"
@@ -741,7 +748,6 @@ with st.sidebar:
     with col_clear:
         if st.button("⌫ Clear Chat", use_container_width=True):
             st.session_state.messages = []
-            st.session_state.audio_cache = {}
             st.rerun()
     with col_tour:
         if st.button("? Tour", use_container_width=True, help="Revisit interactive walkthrough"):
@@ -766,6 +772,9 @@ with col_status:
 
 st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
 
+# Fetch active doc names once for source filtering
+active_doc_names = {d["name"] for d in active_docs}
+
 # Conversation Stream
 if not st.session_state.messages:
     # Minimalist ChatGPT empty state
@@ -774,7 +783,7 @@ if not st.session_state.messages:
         <div style="text-align: center; margin-top: 80px; margin-bottom: 60px;">
             <div style="font-size: 1.8rem; font-weight: 600; color: #ffffff; margin-bottom: 8px;">What would you like to know?</div>
             <div style="font-size: 0.95rem; color: #8e8ea0; max-width: 540px; margin: 0 auto 28px auto;">
-                Ask questions grounded directly in your uploaded policies, reports, spreadsheets, or images.
+                Ask questions grounded directly in your uploaded policies, reports, spreadsheets, or documents. I remember our conversation, so feel free to ask follow-ups.
             </div>
         </div>
         """,
@@ -789,14 +798,13 @@ else:
             if message["role"] == "assistant":
                 # Sources & Citations (strictly filtered against active session documents)
                 raw_sources = message.get("sources", []) or []
-                active_doc_names = {d["name"] for d in session_docs}
                 valid_sources = [s for s in raw_sources if s.get("source") in active_doc_names]
                 if valid_sources:
                     with st.expander("Sources & Citations", expanded=False):
                         for src in valid_sources:
                             st.markdown(f"- **{src['source']}** (Page {src['page']})")
                 
-                # ChatGPT-Style Instant Natural AI Speech Action Bar (Zero Rerun, Zero Lag)
+                # ChatGPT-Style Instant Natural AI Speech Action Bar
                 import urllib.parse
                 raw_txt_encoded = urllib.parse.quote(message["content"])
                 st.markdown(
@@ -817,6 +825,23 @@ else:
                     """,
                     unsafe_allow_html=True
                 )
+
+    # Show thinking animation if waiting for AI response
+    if st.session_state.thinking:
+        with st.chat_message("assistant"):
+            st.markdown(
+                """
+                <div class="thinking-indicator">
+                    <div class="thinking-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    <div class="thinking-label">Thinking...</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
 # --- TEXT & VOICE CHAT INPUT (Native In-Bar Microphone) ---
 if user_prompt := st.chat_input("Ask a question about your documents...", accept_audio=True):
@@ -1087,56 +1112,25 @@ client_enhancements_js = r"""
   function cleanMarkdownForNaturalSpeech(md) {
     if (!md) return "";
     let text = md;
-
-    // 1. Remove code blocks
     text = text.replace(/```[\s\S]*?```/g, "Code block omitted.");
     text = text.replace(/`([^`]+)`/g, "$1");
-
-    // 2. Clean table separator rows (| --- | --- |) and table pipes
     text = text.replace(/\|\s*[-:]+[-|\s:]*\|/g, " ");
     text = text.replace(/\|/g, ", ");
-
-    // 3. Clean headers (## Title -> Title.)
     text = text.replace(/^#{1,6}\s*(.+)$/gm, "$1. ");
-
-    // 4. Clean links [text](url) -> text
     text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
     text = text.replace(/https?:\/\/\S+/g, "");
-
-    // 5. Clean bold, italic, strikethrough
     text = text.replace(/(\*\*|__)(.*?)\1/g, "$2");
     text = text.replace(/(\*|_)(.*?)\1/g, "$2");
     text = text.replace(/~~(.*?)~~/g, "$1");
-
-    // 6. Clean bullets & symbols
     text = text.replace(/^\s*[-*+•]\s+/gm, "");
     text = text.replace(/\(Page\s*\d+\)/gi, "");
     text = text.replace(/\[[A-Z]{3,4}\]/g, "");
-
-    // 7. Conversational replacements for symbols & abbreviations so voice sounds fluent
     text = text.replace(/(\d+)\/(\d+)/g, "$1 out of $2");
     text = text.replace(/(→|->|-->)/g, " to ");
-    text = text.replace(/\bOAuth\b/gi, "O-Auth");
-    text = text.replace(/\bIoT\b/gi, "I-o-T");
-    text = text.replace(/\bESP32\b/gi, "E-S-P 32");
-    text = text.replace(/\bCGPA\b/gi, "C-G-P-A");
-    text = text.replace(/\bAPI\b/g, "A-P-I");
-    text = text.replace(/\bAPIs\b/g, "A-P-I's");
-    text = text.replace(/\bSDE\b/g, "S-D-E");
-    text = text.replace(/\bGSSoC\b/g, "G-S-Soc");
-    text = text.replace(/\bReact\.js\b/gi, "React");
-    text = text.replace(/\bNext\.js\b/gi, "Next J S");
-    text = text.replace(/\bNode\.js\b/gi, "Node J S");
-    text = text.replace(/\bExpress\.js\b/gi, "Express");
-    text = text.replace(/\bStudentSolution\.io\b/gi, "Student Solution dot I O");
-
-    // 8. Clean stray markdown punctuation and normalize commas
     text = text.replace(/[*_~`]/g, "");
     text = text.replace(/,\s*,/g, ",");
     text = text.replace(/\s*,\s*/g, ", ");
     text = text.replace(/^,\s*/, "");
-
-    // 9. Collapse whitespace
     text = text.replace(/[ \t]+/g, " ");
     text = text.replace(/\n+/g, " ");
     return text.trim();
@@ -1147,8 +1141,6 @@ client_enhancements_js = r"""
     if (!s) return null;
     const voices = s.getVoices();
     if (!voices || voices.length === 0) return null;
-
-    // Prioritize natural neural English voices (e.g. Edge Natural or Google US English)
     const preferredOrder = [
       "jenny", "guy", "natural", "neural", "online", "aria", "christopher", 
       "eric", "steffan", "google us english", "samantha", "daniel"
@@ -1163,7 +1155,6 @@ client_enhancements_js = r"""
   }
 
   function splitIntoSpeechChunks(text) {
-    // Split on periods, exclamation marks, question marks, colons, or semicolons
     const sentences = text.match(/[^.!?:\n]+[.!?:\n]+|[^.!?:\n]+$/g) || [text];
     const chunks = [];
     let current = "";
@@ -1240,7 +1231,6 @@ client_enhancements_js = r"""
       return;
     }
 
-    // If already speaking this button, stop!
     if (isSpeaking && activeSpeechBtn === btn) {
       stopAllSpeech();
       return;
