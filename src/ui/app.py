@@ -91,6 +91,49 @@ def submit_query(prompt_text: str):
 st.markdown(
     """
     <style>
+    /* CSS-only Splash Screen to prevent FOUC / theme lag */
+    @keyframes fadeOutAndHide {
+        0% { opacity: 1; visibility: visible; }
+        80% { opacity: 1; visibility: visible; }
+        100% { opacity: 0; visibility: hidden; }
+    }
+    
+    @keyframes spin { 
+        0% { transform: rotate(0deg); } 
+        100% { transform: rotate(360deg); } 
+    }
+
+    #splash-screen {
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        background-color: #212121;
+        z-index: 9999999;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: #ececec;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        animation: fadeOutAndHide 1.5s forwards;
+        pointer-events: none;
+    }
+
+    .splash-loader {
+        border: 3px solid rgba(255, 255, 255, 0.1);
+        border-top: 3px solid #ececec;
+        border-radius: 50%;
+        width: 40px; height: 40px;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+    }
+    </style>
+    
+    <div id="splash-screen">
+        <div class="splash-loader"></div>
+        <div style="font-size: 1.2rem; font-weight: 500; letter-spacing: 0.5px;">Loading AskDoc AI...</div>
+    </div>
+    
+    <style>
     /* Dark ChatGPT Minimalist Palette */
     .stApp {
         background-color: #212121 !important;
