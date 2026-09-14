@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: askdoc_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./.data:/app/.data  # Persist vector store
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    container_name: askdoc_ui
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./.data:/app/.data  # Allow UI to display document stats if needed
+    env_file:
+      - .env
+    environment:
+      - API_URL=http://api:8000  # Connect internally using Docker DNS
+    depends_on:
+      - api
+    restart: unless-stopped

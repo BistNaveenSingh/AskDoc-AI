@@ -1,0 +1,21 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Copy dependencies
+COPY requirements.txt .
+
+# Install system dependencies and Python dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir -r requirements.txt
+
+# Copy application source
+COPY src/ ./src/
+
+# Expose Streamlit port
+EXPOSE 8501
+
+# Start Streamlit UI
+CMD ["streamlit", "run", "src/ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
