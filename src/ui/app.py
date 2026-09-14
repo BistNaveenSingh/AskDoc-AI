@@ -75,18 +75,18 @@ st.markdown(
     """
     <style>
     :root {
-        --custom-sidebar-border: var(--custom-sidebar-border);
-        --custom-card-border: var(--custom-card-border);
-        --custom-icon-border: var(--custom-icon-border);
-        --custom-icon-bg: var(--custom-icon-bg);
-        --custom-pill-border: var(--custom-pill-border);
-        --custom-doc-row-bg: var(--custom-doc-row-bg);
-        --custom-doc-row-border: var(--custom-doc-row-border);
-        --custom-doc-row-hover: var(--custom-doc-row-hover);
-        --custom-accent-bg: var(--custom-accent-bg);
+        --custom-sidebar-border: rgba(255, 255, 255, 0.08);
+        --custom-card-border: rgba(255, 255, 255, 0.2);
+        --custom-icon-border: rgba(255, 255, 255, 0.12);
+        --custom-icon-bg: rgba(255, 255, 255, 0.03);
+        --custom-pill-border: rgba(255, 255, 255, 0.22);
+        --custom-doc-row-bg: rgba(255, 255, 255, 0.02);
+        --custom-doc-row-border: rgba(255, 255, 255, 0.06);
+        --custom-doc-row-hover: rgba(255, 255, 255, 0.05);
+        --custom-accent-bg: rgba(16, 163, 127, 0.05);
         --custom-text-muted: #8e8ea0;
         --custom-popup-bg: #2f2f2f;
-        --custom-popup-border: var(--custom-popup-border);
+        --custom-popup-border: rgba(255, 255, 255, 0.1);
         --custom-popup-hover: #404040;
     }
     
