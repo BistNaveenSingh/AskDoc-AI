@@ -33,17 +33,23 @@ def get_llm():
         primary_llm = ChatGoogleGenerativeAI(
             model=primary_model,
             google_api_key=gemini_key,
-            temperature=0
+            temperature=0,
+            max_retries=1,
+            timeout=30
         )
         fallback_llm1 = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash",
+            model="gemini-1.5-flash",
             google_api_key=gemini_key,
-            temperature=0
+            temperature=0,
+            max_retries=1,
+            timeout=30
         )
         fallback_llm2 = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash",
+            model="gemini-1.5-pro",
             google_api_key=gemini_key,
-            temperature=0
+            temperature=0,
+            max_retries=1,
+            timeout=30
         )
         return primary_llm.with_fallbacks([fallback_llm1, fallback_llm2])
     else:
@@ -194,6 +200,10 @@ def answer_question(query: str, retriever) -> Dict[str, Any]:
         except Exception as e:
             err_str = str(e).lower()
             if "quota" in err_str or "rate" in err_str or "429" in err_str or "resourceexhausted" in err_str:
+                # Fail fast if it's a daily limit instead of a per-minute rate limit
+                if "perday" in err_str or "freetier" in err_str or "limit: 20" in err_str:
+                    answer = "API daily quota exceeded. You have reached the limit for the free tier on this model. Please provide an OpenAI key or wait until the quota resets."
+                    break
                 if attempt < 4:
                     wait_time = 4 * (attempt + 1)
                     delay_match = re.search(r'retry.*?(\d+)', err_str)
