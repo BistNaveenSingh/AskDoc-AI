@@ -74,10 +74,42 @@ def build_question_with_history(prompt_text: str) -> str:
 st.markdown(
     """
     <style>
+    :root {
+        --custom-sidebar-border: var(--custom-sidebar-border);
+        --custom-card-border: var(--custom-card-border);
+        --custom-icon-border: var(--custom-icon-border);
+        --custom-icon-bg: var(--custom-icon-bg);
+        --custom-pill-border: var(--custom-pill-border);
+        --custom-doc-row-bg: var(--custom-doc-row-bg);
+        --custom-doc-row-border: var(--custom-doc-row-border);
+        --custom-doc-row-hover: var(--custom-doc-row-hover);
+        --custom-accent-bg: var(--custom-accent-bg);
+        --custom-text-muted: #8e8ea0;
+        --custom-popup-bg: #2f2f2f;
+        --custom-popup-border: var(--custom-popup-border);
+        --custom-popup-hover: #404040;
+    }
+    
+    @media (prefers-color-scheme: light) {
+        :root {
+            --custom-sidebar-border: rgba(0, 0, 0, 0.1);
+            --custom-card-border: rgba(0, 0, 0, 0.15);
+            --custom-icon-border: rgba(0, 0, 0, 0.15);
+            --custom-icon-bg: rgba(0, 0, 0, 0.03);
+            --custom-pill-border: rgba(0, 0, 0, 0.2);
+            --custom-doc-row-bg: rgba(0, 0, 0, 0.02);
+            --custom-doc-row-border: rgba(0, 0, 0, 0.08);
+            --custom-doc-row-hover: rgba(0, 0, 0, 0.06);
+            --custom-accent-bg: rgba(16, 163, 127, 0.08);
+            --custom-text-muted: #6e6e80;
+            --custom-popup-bg: #ffffff;
+            --custom-popup-border: rgba(0,0,0,0.15);
+            --custom-popup-hover: #f0f0f0;
+        }
+    }
+
     /* Dark ChatGPT Minimalist Palette */
     .stApp {
-        background-color: #212121 !important;
-        color: #ececec !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
     }
     header[data-testid="stHeader"] {
@@ -86,11 +118,10 @@ st.markdown(
     
     /* Sidebar styling */
     [data-testid="stSidebar"] {
-        background-color: #171717 !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-right: 1px solid var(--custom-sidebar-border) !important;
     }
     [data-testid="stSidebar"] hr {
-        border-color: rgba(255, 255, 255, 0.08) !important;
+        border-color: var(--custom-sidebar-border) !important;
         margin: 16px 0 !important;
     }
     
@@ -102,9 +133,9 @@ st.markdown(
         height: 195px !important;
         min-height: 195px !important;
         max-height: 195px !important;
-        border: 1.5px dashed rgba(255, 255, 255, 0.2) !important;
+        border: 1.5px dashed var(--custom-card-border) !important;
         border-radius: 14px !important;
-        background: #1e1e1e !important;
+        background: var(--secondary-background-color) !important;
         padding: 18px 14px !important;
         text-align: center !important;
         display: flex !important;
@@ -122,8 +153,8 @@ st.markdown(
         height: 44px;
         margin: 0 auto 10px auto;
         border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--custom-icon-border);
+        background: var(--custom-icon-bg);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -131,12 +162,12 @@ st.markdown(
     .sidebar-upload-title {
         font-size: 0.95rem;
         font-weight: 600;
-        color: #ffffff;
+        color: var(--text-color);
         margin-bottom: 4px;
     }
     .sidebar-upload-sub {
         font-size: 0.76rem;
-        color: #8e8ea0;
+        color: var(--custom-text-muted);
         line-height: 1.35;
         margin-bottom: 12px;
     }
@@ -146,9 +177,9 @@ st.markdown(
         gap: 6px;
         padding: 6px 18px;
         border-radius: 9999px;
-        border: 1px solid rgba(255, 255, 255, 0.22);
-        background: #2a2a2a;
-        color: #ececec;
+        border: 1px solid var(--custom-pill-border);
+        background: var(--secondary-background-color);
+        color: var(--text-color);
         font-size: 0.82rem;
         font-weight: 500;
         cursor: pointer;
@@ -196,15 +227,15 @@ st.markdown(
 
     /* 3. HOVER SYNCHRONIZATION: Highlight the reference card when hovering the invisible uploader */
     [data-testid="stSidebar"]:has([data-testid="stFileUploader"]:hover) .sidebar-upload-card {
-        border-color: #10a37f !important;
-        background: rgba(16, 163, 127, 0.05) !important;
+        border-color: var(--primary-color) !important;
+        background: var(--custom-accent-bg) !important;
         transform: translateY(-1px) !important;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
     }
     [data-testid="stSidebar"]:has([data-testid="stFileUploader"]:hover) .sidebar-browse-pill {
-        border-color: #10a37f !important;
-        color: #10a37f !important;
-        background: #22352d !important;
+        border-color: var(--primary-color) !important;
+        color: var(--primary-color) !important;
+        background: var(--secondary-background-color) !important;
     }
 
     /* Session Document Item */
@@ -214,13 +245,13 @@ st.markdown(
         justify-content: space-between;
         padding: 8px 10px;
         border-radius: 8px;
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: var(--custom-doc-row-bg);
+        border: 1px solid var(--custom-doc-row-border);
         margin-bottom: 6px;
         transition: background 0.15s ease;
     }
     .doc-row:hover {
-        background: rgba(255, 255, 255, 0.05);
+        background: var(--custom-doc-row-hover);
     }
     .doc-meta {
         display: flex;
@@ -234,7 +265,7 @@ st.markdown(
     [data-testid="stSidebar"] button[kind="secondary"] {
         background: transparent !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        color: #8e8ea0 !important;
+        color: var(--custom-text-muted) !important;
         padding: 2px 6px !important;
         border-radius: 6px !important;
         font-size: 0.8rem !important;
@@ -261,7 +292,7 @@ st.markdown(
     [data-testid="stChatMessage"] {
         background-color: transparent !important;
         padding: 16px 0 !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border-bottom: 1px solid var(--custom-doc-row-hover) !important;
         max-width: 100% !important;
         width: 100% !important;
         word-break: break-word !important;
@@ -283,7 +314,7 @@ st.markdown(
     }
     [data-testid="stChatMessage"] th,
     [data-testid="stChatMessage"] td {
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border: 1px solid var(--custom-icon-border) !important;
         padding: 6px 12px !important;
         white-space: normal !important;
     }
@@ -301,7 +332,7 @@ st.markdown(
         align-items: center !important;
         gap: 6px !important;
         background: rgba(255, 255, 255, 0.04) !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border: 1px solid var(--custom-icon-border) !important;
         border-radius: 8px !important;
         padding: 5px 12px !important;
         color: #b4b4b4 !important;
@@ -313,14 +344,14 @@ st.markdown(
     }
     .chatgpt-read-btn:hover {
         background: rgba(255, 255, 255, 0.09) !important;
-        color: #ffffff !important;
-        border-color: rgba(255, 255, 255, 0.22) !important;
+        color: var(--text-color) !important;
+        border-color: var(--custom-pill-border) !important;
         transform: translateY(-1px) !important;
     }
     .chatgpt-read-btn.speaking {
         background: rgba(16, 163, 127, 0.15) !important;
-        border-color: #10a37f !important;
-        color: #10a37f !important;
+        border-color: var(--primary-color) !important;
+        color: var(--primary-color) !important;
         box-shadow: 0 0 10px rgba(16, 163, 127, 0.25) !important;
     }
     .chatgpt-read-btn.speaking .tts-play-icon {
@@ -355,7 +386,7 @@ st.markdown(
     .thinking-dots span {
         width: 8px;
         height: 8px;
-        background: #10a37f;
+        background: var(--primary-color);
         border-radius: 50%;
         animation: thinking-dot 1.4s ease-in-out infinite;
     }
@@ -363,7 +394,7 @@ st.markdown(
     .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
     .thinking-label {
         font-size: 0.88rem;
-        color: #8e8ea0;
+        color: var(--custom-text-muted);
         font-style: italic;
     }
 
@@ -420,7 +451,7 @@ st.markdown(
         flex: 1 1 auto !important;
         width: 100% !important;
         background: transparent !important;
-        color: #ececec !important;
+        color: var(--text-color) !important;
         font-size: 0.95rem !important;
         line-height: 1.5 !important;
         border: none !important;
@@ -433,7 +464,7 @@ st.markdown(
         overflow-y: hidden !important;
     }
     [data-testid="stChatInput"] textarea::placeholder {
-        color: #8e8ea0 !important;
+        color: var(--custom-text-muted) !important;
         font-size: 0.95rem !important;
     }
 
@@ -462,7 +493,7 @@ st.markdown(
         transform: scale(1.05) !important;
     }
     [data-testid="stChatInputSubmitButton"]:disabled {
-        background: rgba(255, 255, 255, 0.12) !important;
+        background: var(--custom-icon-border) !important;
         color: rgba(255, 255, 255, 0.3) !important;
         cursor: not-allowed !important;
         box-shadow: none !important;
@@ -496,8 +527,8 @@ st.markdown(
     }
     [data-testid="stChatInputMicButton"]:hover,
     #chat-inbar-mic-btn:hover {
-        background: rgba(255, 255, 255, 0.12) !important;
-        color: #ffffff !important;
+        background: var(--custom-icon-border) !important;
+        color: var(--text-color) !important;
         transform: scale(1.06) !important;
     }
     [data-testid="stChatInputMicButton"] svg,
@@ -509,7 +540,7 @@ st.markdown(
     }
     [data-testid="stChatInputMicButton"]:active,
     #chat-inbar-mic-btn.listening {
-        color: #ffffff !important;
+        color: var(--text-color) !important;
         background: #ef4444 !important;
         box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.35) !important;
         animation: mic-pulse-ring 1.3s infinite ease-in-out !important;
@@ -609,8 +640,8 @@ if st.session_state.tour_active:
 
 # --- SIDEBAR: "Add Files" Session ---
 with st.sidebar:
-    st.markdown("<h3 style='margin-bottom: 2px; color: #ececec; font-weight: 600;'>Add Files</h3>", unsafe_allow_html=True)
-    st.markdown("<p style='font-size: 0.78rem; color: #8e8ea0; margin-bottom: 12px;'>PDF, Office Docs, CSV, JSON, HTML, Text (No images or videos)</p>", unsafe_allow_html=True)
+    st.markdown("<h3 style='margin-bottom: 2px; color: var(--text-color); font-weight: 600;'>Add Files</h3>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size: 0.78rem; color: var(--custom-text-muted); margin-bottom: 12px;'>PDF, Office Docs, CSV, JSON, HTML, Text (No images or videos)</p>", unsafe_allow_html=True)
     
     # Sleek Reference Dropzone Card (Native invisible overlay sits on top)
     st.markdown(
@@ -650,16 +681,16 @@ with st.sidebar:
     # If user selected files, render a sleek status card, file list, and index/clear buttons
     if uploaded_files:
         files_summary_html = "".join([
-            f"<div style='font-size: 0.72rem; color: #ececec; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'>• {f.name} ({(len(f.getvalue()) / 1024):.1f} KB)</div>"
+            f"<div style='font-size: 0.72rem; color: var(--text-color); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'>• {f.name} ({(len(f.getvalue()) / 1024):.1f} KB)</div>"
             for f in uploaded_files[:4]
         ])
         if len(uploaded_files) > 4:
-            files_summary_html += f"<div style='font-size: 0.7rem; color: #8e8ea0; margin-top: 2px;'>... and {len(uploaded_files) - 4} more</div>"
+            files_summary_html += f"<div style='font-size: 0.7rem; color: var(--custom-text-muted); margin-top: 2px;'>... and {len(uploaded_files) - 4} more</div>"
             
         st.markdown(
             f"""
             <div style="background: rgba(16, 163, 127, 0.1); border: 1px solid rgba(16, 163, 127, 0.4); border-radius: 12px; padding: 12px; margin-top: 10px; margin-bottom: 8px;">
-                <div style="color: #10a37f; font-weight: 600; font-size: 0.85rem; margin-bottom: 4px;">✓ {len(uploaded_files)} file{'s' if len(uploaded_files) > 1 else ''} selected</div>
+                <div style="color: var(--primary-color); font-weight: 600; font-size: 0.85rem; margin-bottom: 4px;">✓ {len(uploaded_files)} file{'s' if len(uploaded_files) > 1 else ''} selected</div>
                 {files_summary_html}
             </div>
             """,
@@ -705,7 +736,7 @@ with st.sidebar:
 
     # Active Session Documents with Individual Deletion
     session_docs = get_indexed_documents()
-    st.markdown(f"<div style='font-size: 0.88rem; font-weight: 600; color: #ececec; margin-bottom: 8px;'>Active Documents ({len(session_docs)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='font-size: 0.88rem; font-weight: 600; color: var(--text-color); margin-bottom: 8px;'>Active Documents ({len(session_docs)})</div>", unsafe_allow_html=True)
     
     if session_docs:
         for d in session_docs:
@@ -716,7 +747,7 @@ with st.sidebar:
                     f"""
                     <div class="doc-meta" title="{d['name']}">
                         <span style="color: {badge_color}; font-weight: 700; font-size: 0.72rem;">{badge_symbol}</span>
-                        <span style="color: #ececec; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">{d['name']}</span>
+                        <span style="color: var(--text-color); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">{d['name']}</span>
                         <span style="color: #71717a; font-size: 0.72rem;">({format_size(d['size'])})</span>
                     </div>
                     """,
@@ -757,11 +788,11 @@ doc_count = len(active_docs)
 # Subtle Minimal Top Bar
 col_title, col_status = st.columns([8, 2])
 with col_title:
-    st.markdown("<h2 style='margin: 0; font-weight: 600; color: #ffffff;'>AskDoc AI</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='margin: 0; font-weight: 600; color: var(--text-color);'>AskDoc AI</h2>", unsafe_allow_html=True)
 with col_status:
     badge_label = f"{doc_count} document{'s' if doc_count != 1 else ''} active"
     st.markdown(
-        f"<div style='text-align: right; padding-top: 6px;'><span style='background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 9999px; padding: 4px 12px; font-size: 0.78rem; color: #8e8ea0;'>● {badge_label}</span></div>",
+        f"<div style='text-align: right; padding-top: 6px;'><span style='background: var(--custom-doc-row-border); border: 1px solid var(--custom-popup-border); border-radius: 9999px; padding: 4px 12px; font-size: 0.78rem; color: var(--custom-text-muted);'>● {badge_label}</span></div>",
         unsafe_allow_html=True
     )
 
@@ -776,8 +807,8 @@ if not st.session_state.messages:
     st.markdown(
         """
         <div style="text-align: center; margin-top: 80px; margin-bottom: 60px;">
-            <div style="font-size: 1.8rem; font-weight: 600; color: #ffffff; margin-bottom: 8px;">What would you like to know?</div>
-            <div style="font-size: 0.95rem; color: #8e8ea0; max-width: 540px; margin: 0 auto 28px auto;">
+            <div style="font-size: 1.8rem; font-weight: 600; color: var(--text-color); margin-bottom: 8px;">What would you like to know?</div>
+            <div style="font-size: 0.95rem; color: var(--custom-text-muted); max-width: 540px; margin: 0 auto 28px auto;">
                 Ask questions grounded directly in your uploaded policies, reports, spreadsheets, or documents. I remember our conversation, so feel free to ask follow-ups.
             </div>
         </div>
@@ -833,7 +864,7 @@ docs_json = json.dumps(active_doc_names)
 js_code = f"""
 <script>
     const docs = {docs_json};
-    const parentDoc = window.parent.document;
+    const parentDoc = document;
     
     function setupMention() {{
         const textarea = parentDoc.querySelector('textarea[data-testid="stChatInputTextArea"]');
@@ -856,8 +887,8 @@ js_code = f"""
             popup.style.width = '100%';
             popup.style.maxHeight = '200px';
             popup.style.overflowY = 'auto';
-            popup.style.backgroundColor = '#2f2f2f';
-            popup.style.border = '1px solid rgba(255,255,255,0.1)';
+            popup.style.backgroundColor = 'var(--custom-popup-bg)';
+            popup.style.border = '1px solid var(--custom-popup-border)';
             popup.style.borderRadius = '16px';
             popup.style.zIndex = '999999';
             popup.style.marginBottom = '10px';
@@ -888,11 +919,11 @@ js_code = f"""
                 const item = parentDoc.createElement('div');
                 item.textContent = doc;
                 item.style.padding = '10px 16px';
-                item.style.color = '#ececec';
+                item.style.color = 'var(--text-color)';
                 item.style.cursor = 'pointer';
                 item.style.fontFamily = '"Source Sans Pro", sans-serif';
                 item.style.fontSize = '15px';
-                item.style.backgroundColor = (idx === selectedIndex) ? '#404040' : 'transparent';
+                item.style.backgroundColor = (idx === selectedIndex) ? 'var(--custom-popup-hover)' : 'transparent';
                 
                 item.addEventListener('mouseenter', () => {{
                     selectedIndex = idx;
@@ -997,7 +1028,7 @@ js_code = f"""
     setupMention();
 </script>
 """
-components.html(js_code, height=0, width=0)
+st.html(js_code, unsafe_allow_javascript=True)
 
 if user_prompt := st.chat_input("Ask a question about your documents...", accept_audio=True):
     query_text = ""
@@ -1045,7 +1076,7 @@ if user_prompt := st.chat_input("Ask a question about your documents...", accept
                             <circle cx="12" cy="12" r="10"></circle>
                             <path d="M12 6v6l4 2"></path>
                         </svg>
-                        <span style="color: #8e8ea0; font-size: 0.9rem;">Searching through your documents...</span>
+                        <span style="color: var(--custom-text-muted); font-size: 0.9rem;">Searching through your documents...</span>
                     </div>
                     <div class="thinking-dots" style="margin-top: 8px;">
                         <span></span>
@@ -1128,15 +1159,15 @@ client_enhancements_js = r"""
       if (uploader && card && !uploader.dataset.boundDrag) {
         uploader.dataset.boundDrag = "true";
         uploader.addEventListener('dragover', function(e) {
-          card.style.borderColor = '#10a37f';
+          card.style.borderColor = 'var(--primary-color)';
           card.style.background = 'rgba(16, 163, 127, 0.08)';
         });
         uploader.addEventListener('dragleave', function(e) {
-          card.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+          card.style.borderColor = 'var(--custom-card-border)';
           card.style.background = '#1e1e1e';
         });
         uploader.addEventListener('drop', function(e) {
-          card.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+          card.style.borderColor = 'var(--custom-card-border)';
           card.style.background = '#1e1e1e';
         });
       }
