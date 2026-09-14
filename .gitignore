@@ -33,3 +33,6 @@ Thumbs.db
 # Scratch & temporary tests
 scratch/
 scratch_*.py
+
+# vercel
+vercel.json
