@@ -1,4 +1,4 @@
-# AntiRag — AI-Powered Document Question Answering System
+# AskDoc AI — AI-Powered Document Question Answering System
 
 ## What This Is
 

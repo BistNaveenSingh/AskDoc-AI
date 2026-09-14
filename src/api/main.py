@@ -8,10 +8,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from src.ingestion.document_processor import process_file, VIDEO_EXTENSIONS
-from src.embeddings.vector_store import add_documents_to_store, get_retriever
+from src.embeddings.vector_store import add_documents_to_store, get_retriever, delete_document_from_store, rebuild_vector_store
 from src.retrieval.qa_chain import answer_question
 
-app = FastAPI(title="AntiRag API", description="AI-Powered Document Question Answering System", version="1.0.0")
+app = FastAPI(title="AskDoc AI API", description="AI-Powered Document Question Answering System", version="1.0.0")
 
 # Setup data directory
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data")
@@ -73,6 +73,25 @@ async def list_documents():
                     "ext": ext.lower()
                 })
     return {"documents": documents}
+
+@app.delete("/documents/{filename}")
+async def delete_document(filename: str):
+    """
+    Deletes a document from the session (data directory) and updates the vector store.
+    """
+    file_path = os.path.join(DATA_DIR, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail=f"Document '{filename}' not found.")
+        
+    try:
+        os.remove(file_path)
+        # Instantly filter and update vector store
+        delete_document_from_store(filename)
+        return {"message": f"Document '{filename}' successfully deleted and vector store updated."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting document: {str(e)}")
+
+
 
 class ProcessRequest(BaseModel):
     filename: str

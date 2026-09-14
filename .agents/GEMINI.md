@@ -2,7 +2,7 @@
 
 ## Project
 
-**AntiRag — AI-Powered Document Question Answering System**
+**AskDoc AI — AI-Powered Document Question Answering System**
 
 A Retrieval-Augmented Generation (RAG) application that lets users upload PDF documents (policies, manuals, reports) and ask natural-language questions about them. The system retrieves relevant passages, generates answers grounded only in document content with source citations, and explicitly says "I don't know" when the answer isn't in the documents. Built as a learning-first project to deeply understand RAG pipelines end to end.
 

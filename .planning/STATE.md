@@ -9,7 +9,7 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 
 ## Active Phase
 
-All phases complete. v1 milestone ready for review.
+Phase 7: ChatGPT-Style UI Redesign & Streamlined UX
 
 ## Phase Tracking
 
@@ -19,6 +19,9 @@ All phases complete. v1 milestone ready for review.
 - [x] Phase 4: Retrieval & LLM Generation
 - [x] Phase 5: FastAPI Backend
 - [x] Phase 6: Streamlit UI
+- [x] Phase 7: ChatGPT-Style UI Redesign & Streamlined UX
+
+
 
 ## Phase Completion Notes
 
@@ -60,8 +63,26 @@ All phases complete. v1 milestone ready for review.
 - Source citations displayed below answers
 - Connects to FastAPI backend at localhost:8000
 
+### Phase 7: ChatGPT-Style UI Redesign & Streamlined UX ✅
+- Removed red-marked UI clutter: floating voice recorder bar, global audio toggle, duplicate main upload box
+- Relocated reference dropzone card to sidebar "Add Files" session; clicking card triggers system file manager
+- In-bar microphone button placed directly on left of Send button inside `st.chat_input`
+- ChatGPT-style per-response `🔊 Listen` audio action at the bottom of assistant messages
+- Added `DELETE /documents/{filename}` endpoint and instant vector index updating
+- Each active document has a clean `✕` delete button in sidebar
+- Interactive multi-step onboarding guide (`st.dialog`) that runs only once per site visit (persisted via `localStorage`)
+- Minimalist dark aesthetic (`#212121` / `#2f2f2f`) with clean monochrome symbols instead of emojis
+
+
+### Quick Task: Purge Stale Citations & Conversational Guardrails ✅
+- Purged stale chunks (`cars_data.csv`) from FAISS vector store; added automatic disk sync in `src/embeddings/vector_store.py`.
+- Added greeting/chitchat detector in `src/retrieval/qa_chain.py` returning `sources: []`.
+- Added grounded citation verification: 'I don't know' responses and missing context never cite documents.
+- Active document filtering added to both backend QA chain and Streamlit frontend.
+
 ## Session Continuity
 
-Last session: 2026-09-09
-Stopped at: All phases audited and marked complete
+Last session: 2026-09-14
+Stopped at: Stale citations bug fixed and verified
 Resume file: None
+

@@ -29,3 +29,7 @@ Thumbs.db
 
 .agents/
 .claude/
+
+# Scratch & temporary tests
+scratch/
+scratch_*.py

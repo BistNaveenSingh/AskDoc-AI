@@ -12,6 +12,8 @@
 | 4 | Retrieval & LLM Generation | Retrieve relevant chunks for a question, generate an answer using GPT-4o-mini with citations, and apply relevance guardrails. | RET-03, GEN-01, GEN-02, GEN-03 | 3 |
 | 5 | FastAPI Backend | Expose the ingestion, processing, and Q&A capabilities through REST endpoints. | API-01, API-02, API-03 | 2 |
 | 6 | Streamlit UI | Provide a web interface for uploading documents and interacting with the Q&A system. | UI-01, UI-02 | 2 |
+| 7 | ChatGPT-Style UI Redesign & Streamlined UX | Minimalist dark ChatGPT theme, in-bar microphone, per-response audio, deletable session files, and interactive onboarding guide. | UI-03, UI-04, UI-05 | 5 |
+| 7.1 | Natural AI Voice & Instant Read Aloud | Replace robotic gTTS and server reruns with instant, fluent natural AI speech via client-side Web Speech Synthesis, toggle play/stop, and zero page reload. | UI-06 | 3 |
 
 ### Phase Details
 
@@ -62,5 +64,28 @@ Goal: Provide a web interface for uploading documents and interacting with the Q
 Requirements: UI-01, UI-02
 **Mode:** mvp
 Success criteria:
-1. Users can upload a PDF via the Streamlit interface, which successfully hits the backend endpoints.
+1. Users can upload a PDF via the Streamlit interface, successfully hitting backend endpoints.
 2. Users can ask questions in a chat interface and see the AI's response along with citations.
+
+**Phase 7: ChatGPT-Style UI Redesign & Streamlined UX**
+Goal: Transform the UI into a clean, minimalist ChatGPT-inspired experience with embedded mic, per-response audio, deletable files, and interactive onboarding guide.
+Requirements: UI-03, UI-04, UI-05
+**Mode:** mvp
+Success criteria:
+1. Red-marked clutter is eliminated (no floating voice container, no global audio toggle, no duplicate upload card).
+2. Reference upload dropzone card is housed in the sidebar "Add Files" session and triggers the file picker on click.
+3. Microphone is embedded inside the chat input immediately to the left of the send button.
+4. Spoken audio playback is located at the bottom of each assistant message like ChatGPT.
+5. Session files can be deleted individually with updated indexing.
+6. Interactive tutorial guide runs once per site visit.
+
+**Phase 7.1: Natural AI Voice & Instant Read Aloud**
+Goal: Upgrade response reading to instant, fluent, natural AI speech using browser-native Speech Synthesis (Neural AI voices) with zero latency, zero page reruns, markdown stripping, and play/stop toggle.
+Requirements: UI-06
+**Mode:** mvp
+Success criteria:
+1. Clicking "Read aloud" starts playback instantly without page reload, server spinner, or generating a new response.
+2. Voice uses high-definition natural neural English voices (e.g. Microsoft Natural or Google US English) instead of robotic gTTS.
+3. Formatted markdown, code blocks, and source citations are cleanly stripped so speech flows like natural human conversational reading.
+4. Button toggles between Play and Stop (`⏹ Stop`) with active audio indication.
+
