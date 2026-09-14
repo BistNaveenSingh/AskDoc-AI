@@ -821,7 +821,184 @@ else:
                     unsafe_allow_html=True
                 )
 
+import json
+import streamlit.components.v1 as components
+
 # --- TEXT & VOICE CHAT INPUT (with real-time thinking animation) ---
+# Inject JS to augment the native st.chat_input with @mention support
+active_docs_for_mention = get_indexed_documents()
+active_doc_names = [d["name"] for d in active_docs_for_mention]
+docs_json = json.dumps(active_doc_names)
+
+js_code = f"""
+<script>
+    const docs = {docs_json};
+    const parentDoc = window.parent.document;
+    
+    function setupMention() {{
+        const textarea = parentDoc.querySelector('textarea[data-testid="stChatInputTextArea"]');
+        if (!textarea) {{
+            setTimeout(setupMention, 500);
+            return;
+        }}
+        
+        if (textarea.dataset.mentionAttached) return;
+        textarea.dataset.mentionAttached = 'true';
+        
+        let popup = parentDoc.getElementById('native-mention-popup');
+        if (!popup) {{
+            popup = parentDoc.createElement('div');
+            popup.id = 'native-mention-popup';
+            popup.style.display = 'none';
+            popup.style.position = 'absolute';
+            popup.style.bottom = '100%';
+            popup.style.left = '0';
+            popup.style.width = '100%';
+            popup.style.maxHeight = '200px';
+            popup.style.overflowY = 'auto';
+            popup.style.backgroundColor = '#2f2f2f';
+            popup.style.border = '1px solid rgba(255,255,255,0.1)';
+            popup.style.borderRadius = '16px';
+            popup.style.zIndex = '999999';
+            popup.style.marginBottom = '10px';
+            popup.style.boxShadow = '0 10px 20px rgba(0,0,0,0.3)';
+            popup.style.padding = '8px 0';
+            
+            const style = parentDoc.createElement('style');
+            style.innerHTML = `
+                #native-mention-popup::-webkit-scrollbar {{ width: 8px; }}
+                #native-mention-popup::-webkit-scrollbar-thumb {{ background-color: #4a4a4a; border-radius: 4px; }}
+            `;
+            parentDoc.head.appendChild(style);
+            
+            const container = parentDoc.querySelector('[data-testid="stChatInput"]');
+            if (container) {{
+                container.style.position = 'relative';
+                container.appendChild(popup);
+            }}
+        }}
+        
+        let currentFilteredDocs = [];
+        let selectedIndex = 0;
+        let lastAtPos = -1;
+        
+        function renderPopup() {{
+            popup.innerHTML = '';
+            currentFilteredDocs.forEach((doc, idx) => {{
+                const item = parentDoc.createElement('div');
+                item.textContent = doc;
+                item.style.padding = '10px 16px';
+                item.style.color = '#ececec';
+                item.style.cursor = 'pointer';
+                item.style.fontFamily = '"Source Sans Pro", sans-serif';
+                item.style.fontSize = '15px';
+                item.style.backgroundColor = (idx === selectedIndex) ? '#404040' : 'transparent';
+                
+                item.addEventListener('mouseenter', () => {{
+                    selectedIndex = idx;
+                    renderPopup();
+                }});
+                
+                item.addEventListener('mousedown', function(evt) {{
+                    evt.preventDefault();
+                    applyMention(doc);
+                }});
+                
+                popup.appendChild(item);
+            }});
+        }}
+        
+        function applyMention(docName) {{
+            const val = textarea.value;
+            const cursor = textarea.selectionStart;
+            const before = val.substring(0, lastAtPos);
+            const after = val.substring(cursor);
+            
+            const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
+            const newValue = before + '@' + docName + ' ' + after;
+            nativeInputValueSetter.call(textarea, newValue);
+            textarea.dispatchEvent(new Event('input', {{ bubbles: true }}));
+            
+            popup.style.display = 'none';
+            
+            // Move cursor to end of inserted mention
+            const newPos = before.length + docName.length + 2;
+            setTimeout(() => {{
+                textarea.setSelectionRange(newPos, newPos);
+                textarea.focus();
+            }}, 0);
+        }}
+        
+        textarea.addEventListener('input', function(e) {{
+            const val = textarea.value;
+            const cursor = textarea.selectionStart;
+            const textBefore = val.substring(0, cursor);
+            lastAtPos = textBefore.lastIndexOf('@');
+            
+            // If the chat was submitted and input cleared
+            if (val.trim() === '') {{
+                popup.style.display = 'none';
+                return;
+            }}
+            
+            if (lastAtPos !== -1 && (lastAtPos === 0 || textBefore[lastAtPos - 1] === ' ')) {{
+                const query = textBefore.substring(lastAtPos + 1);
+                currentFilteredDocs = docs.filter(d => d.toLowerCase().includes(query.toLowerCase()));
+                
+                if (currentFilteredDocs.length > 0) {{
+                    selectedIndex = 0; // reset selection
+                    renderPopup();
+                    popup.style.display = 'block';
+                }} else {{
+                    popup.style.display = 'none';
+                }}
+            }} else {{
+                popup.style.display = 'none';
+            }}
+        }});
+        
+        // Use capture phase to intercept Tab/Enter before Streamlit's native handlers
+        textarea.addEventListener('keydown', function(e) {{
+            if (popup.style.display === 'block') {{
+                if (e.key === 'Tab' || e.key === 'Enter') {{
+                    e.preventDefault();
+                    e.stopImmediatePropagation(); // Stop Streamlit from sending the message early!
+                    
+                    if (currentFilteredDocs.length > 0) {{
+                        applyMention(currentFilteredDocs[selectedIndex]);
+                    }}
+                }} else if (e.key === 'ArrowDown') {{
+                    e.preventDefault();
+                    selectedIndex = (selectedIndex + 1) % currentFilteredDocs.length;
+                    renderPopup();
+                    // Scroll into view
+                    const items = popup.children;
+                    if(items[selectedIndex]) items[selectedIndex].scrollIntoView({{block: 'nearest'}});
+                }} else if (e.key === 'ArrowUp') {{
+                    e.preventDefault();
+                    selectedIndex = (selectedIndex - 1 + currentFilteredDocs.length) % currentFilteredDocs.length;
+                    renderPopup();
+                    const items = popup.children;
+                    if(items[selectedIndex]) items[selectedIndex].scrollIntoView({{block: 'nearest'}});
+                }} else if (e.key === 'Escape') {{
+                    popup.style.display = 'none';
+                }}
+            }} else if (e.key === 'Enter' && !e.shiftKey) {{
+                // If popup is closed and user sends message, hide popup just in case
+                setTimeout(() => popup.style.display = 'none', 50);
+            }}
+        }}, true);
+        
+        textarea.addEventListener('blur', () => {{
+            setTimeout(() => popup.style.display = 'none', 150);
+        }});
+    }}
+    
+    setupMention();
+</script>
+"""
+components.html(js_code, height=0, width=0)
+
 if user_prompt := st.chat_input("Ask a question about your documents...", accept_audio=True):
     query_text = ""
     if isinstance(user_prompt, str):
