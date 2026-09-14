@@ -32,7 +32,7 @@ def transcribe_image_bytes(image_bytes: bytes, mime_type: str = "image/png", con
     """
     Transcribes all text, tables, charts, diagrams, and handwriting from image bytes using Gemini.
     """
-    gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    gemini_key = (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "").strip()
     if not gemini_key:
         return ""
         

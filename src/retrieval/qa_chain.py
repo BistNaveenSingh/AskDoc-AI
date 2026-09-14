@@ -26,7 +26,7 @@ def format_docs(docs: List[Document]) -> str:
 
 def get_llm():
     """Initializes and returns the primary LLM with fallbacks."""
-    gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    gemini_key = (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "").strip()
     if gemini_key:
         from langchain_google_genai import ChatGoogleGenerativeAI
         primary_model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")

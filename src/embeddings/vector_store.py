@@ -12,7 +12,7 @@ def get_embeddings_model():
     Prioritizes Gemini (text-embedding-004) if GEMINI_API_KEY or GOOGLE_API_KEY is found,
     otherwise falls back to OpenAI (text-embedding-3-small).
     """
-    gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    gemini_key = (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "").strip()
     if gemini_key:
         from langchain_google_genai import GoogleGenerativeAIEmbeddings
         return GoogleGenerativeAIEmbeddings(
