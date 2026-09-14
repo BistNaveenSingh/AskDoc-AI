@@ -16,6 +16,8 @@ st.set_page_config(
 )
 
 # --- Session State Initialization ---
+if "app_booted" not in st.session_state:
+    st.session_state.app_booted = False
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "tour_step" not in st.session_state:
@@ -24,6 +26,138 @@ if "tour_active" not in st.session_state:
     st.session_state.tour_active = False
 if "uploader_key" not in st.session_state:
     st.session_state.uploader_key = 0
+
+if not st.session_state.app_booted:
+    st.session_state.app_booted = True
+    st.markdown(
+        """
+        <style>
+        /* Hide default Streamlit headers during loading */
+        header[data-testid="stHeader"] { display: none !important; }
+        footer { display: none !important; }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1e2f 100%);
+            z-index: 999999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            animation: hide-loader 0.8s ease-in-out 5s forwards;
+        }
+
+        .loader-core {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+
+        .orbital-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-top-color: #10a37f;
+            border-bottom-color: #38bdf8;
+            animation: spin 2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+            box-shadow: 0 0 25px rgba(16, 163, 127, 0.3), inset 0 0 15px rgba(56, 189, 248, 0.3);
+        }
+
+        .orbital-ring:nth-child(2) {
+            width: 70%;
+            height: 70%;
+            border-top-color: #c084fc;
+            border-bottom-color: #f472b6;
+            animation: spin-reverse 3s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+            box-shadow: 0 0 20px rgba(192, 132, 252, 0.3);
+        }
+
+        .orbital-ring:nth-child(3) {
+            width: 40%;
+            height: 40%;
+            border-top-color: #facc15;
+            border-bottom-color: #fb923c;
+            animation: spin 1.5s linear infinite;
+            box-shadow: 0 0 15px rgba(250, 204, 21, 0.3);
+        }
+
+        .core-dot {
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 20px 5px rgba(255, 255, 255, 0.8);
+            animation: pulse-core 1.2s ease-in-out infinite alternate;
+        }
+
+        .loading-title {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: 6px;
+            background: linear-gradient(135deg, #10a37f, #38bdf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+            animation: fade-up 0.8s ease-out forwards;
+        }
+
+        .loading-subtitle {
+            font-size: 15px;
+            color: #94a3b8;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-weight: 500;
+            animation: pulse-text 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes spin-reverse {
+            0% { transform: rotate(360deg); }
+            100% { transform: rotate(0deg); }
+        }
+        @keyframes pulse-core {
+            0% { transform: scale(0.8); box-shadow: 0 0 10px 2px rgba(255,255,255,0.4); }
+            100% { transform: scale(1.3); box-shadow: 0 0 30px 10px rgba(255,255,255,0.9); }
+        }
+        @keyframes fade-up {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse-text {
+            0% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        @keyframes hide-loader {
+            0% { opacity: 1; backdrop-filter: blur(10px); }
+            100% { opacity: 0; backdrop-filter: blur(0px); visibility: hidden; pointer-events: none; }
+        }
+        </style>
+        
+        <div class="loading-overlay">
+            <div class="loader-core">
+                <div class="orbital-ring"></div>
+                <div class="orbital-ring"></div>
+                <div class="orbital-ring"></div>
+                <div class="core-dot"></div>
+            </div>
+            <div class="loading-title">ASKDOC AI</div>
+            <div class="loading-subtitle">Initializing Neural Engine...</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 def get_indexed_documents():
     """Fetches list of all documents currently saved and indexed in the knowledge base."""
