@@ -199,7 +199,7 @@ def answer_question(query: str, retriever) -> Dict[str, Any]:
             break
         except Exception as e:
             err_str = str(e).lower()
-            if "quota" in err_str or "rate" in err_str or "429" in err_str or "resourceexhausted" in err_str:
+            if "quota" in err_str or "rate" in err_str or "429" in err_str or "resourceexhausted" in err_str or "503" in err_str or "unavailable" in err_str or "high demand" in err_str:
                 # Fail fast if it's a daily limit instead of a per-minute rate limit
                 if "perday" in err_str or "freetier" in err_str or "limit: 20" in err_str:
                     answer = "API daily quota exceeded. You have reached the limit for the free tier on this model. Please provide an OpenAI key or wait until the quota resets."
@@ -214,7 +214,7 @@ def answer_question(query: str, retriever) -> Dict[str, Any]:
                             pass
                     time.sleep(wait_time)
                     continue
-                answer = "API quota exceeded. Please wait a moment before asking another question."
+                answer = "API is currently experiencing high demand or quota limits. Please wait a moment before asking another question."
             elif "safety" in err_str or "block" in err_str:
                 answer = "I could not generate an answer because the content was filtered by safety policies."
                 break
