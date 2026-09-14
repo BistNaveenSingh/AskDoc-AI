@@ -29,19 +29,19 @@ def get_llm():
     gemini_key = (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "").strip()
     if gemini_key:
         from langchain_google_genai import ChatGoogleGenerativeAI
-        primary_model = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+        primary_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         primary_llm = ChatGoogleGenerativeAI(
             model=primary_model,
             google_api_key=gemini_key,
             temperature=0
         )
         fallback_llm1 = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
+            model="gemini-2.5-flash",
             google_api_key=gemini_key,
             temperature=0
         )
         fallback_llm2 = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
+            model="gemini-2.5-flash",
             google_api_key=gemini_key,
             temperature=0
         )
