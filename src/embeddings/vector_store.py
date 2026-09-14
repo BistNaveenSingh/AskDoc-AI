@@ -117,8 +117,28 @@ def get_retriever(persist_directory: str = DB_PATH, k: int = 8):
     if not vector_store.docstore._dict:
         return None
         
-    # Return a retriever that fetches the top k most similar chunks
-    return vector_store.as_retriever(search_kwargs={"k": k})
+    # Create the FAISS retriever (Dense)
+    faiss_retriever = vector_store.as_retriever(search_kwargs={"k": k})
+    
+    # Create the BM25 retriever (Sparse) from the raw documents stored in the FAISS index
+    try:
+        from langchain_community.retrievers import BM25Retriever
+        from langchain_classic.retrievers.ensemble import EnsembleRetriever
+        
+        # Extract all documents
+        docs = list(vector_store.docstore._dict.values())
+        bm25_retriever = BM25Retriever.from_documents(docs)
+        bm25_retriever.k = k
+        
+        # Combine them using Reciprocal Rank Fusion
+        ensemble_retriever = EnsembleRetriever(
+            retrievers=[bm25_retriever, faiss_retriever],
+            weights=[0.5, 0.5]
+        )
+        return ensemble_retriever
+    except ImportError as e:
+        print(f"Warning: Could not import BM25 or Ensemble retriever, falling back to FAISS only. Error: {e}")
+        return faiss_retriever
 
 def delete_document_from_store(filename: str, persist_directory: str = DB_PATH) -> int:
     """
