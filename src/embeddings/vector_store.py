@@ -16,7 +16,7 @@ def get_embeddings_model():
     if gemini_key:
         from langchain_google_genai import GoogleGenerativeAIEmbeddings
         return GoogleGenerativeAIEmbeddings(
-            model="models/gemini-embedding-001",
+            model="models/embedding-001",
             google_api_key=gemini_key
         )
     
