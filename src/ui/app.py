@@ -625,6 +625,7 @@ with st.sidebar:
             if st.button(f"Index {len(uploaded_files)} File{'s' if len(uploaded_files) > 1 else ''} ->", type="primary", width="stretch"):
                 prog = st.progress(0)
                 indexed_count = 0
+                has_error = False
                 for idx_f, f_item in enumerate(uploaded_files):
                     with st.spinner(f"Indexing {f_item.name}..."):
                         f_mime = f_item.type or "application/octet-stream"
@@ -635,11 +636,20 @@ with st.sidebar:
                                 indexed_count += 1
                             else:
                                 st.error(f"{f_item.name}: {resp.json().get('detail', 'Upload failed')}")
+                                has_error = True
                         except Exception as ex:
                             st.error(f"{f_item.name}: {ex}")
+                            has_error = True
                     prog.progress((idx_f + 1) / len(uploaded_files))
+                
                 st.session_state.uploader_key += 1
-                st.toast(f"Successfully indexed {indexed_count} file(s).")
+                if indexed_count > 0:
+                    st.toast(f"Successfully indexed {indexed_count} file(s).")
+                
+                if has_error:
+                    import time
+                    time.sleep(4)
+                    
                 st.rerun()
         with col_clr:
             if st.button("✕", width="stretch", help="Clear selected files"):
