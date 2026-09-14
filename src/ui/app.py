@@ -24,8 +24,6 @@ if "tour_active" not in st.session_state:
     st.session_state.tour_active = False
 if "uploader_key" not in st.session_state:
     st.session_state.uploader_key = 0
-if "thinking" not in st.session_state:
-    st.session_state.thinking = False
 
 def get_indexed_documents():
     """Fetches list of all documents currently saved and indexed in the knowledge base."""
@@ -59,52 +57,18 @@ def get_file_symbol_badge(filename: str, ext: str):
         return "[TXT]", "#94a3b8"
 
 
-def submit_query(prompt_text: str):
-    """Sends user question to the backend and records answer & sources in session state.
-    Includes chat history for context-aware follow-up questions."""
-    if not prompt_text or not prompt_text.strip():
-        return
-    st.session_state.messages.append({"role": "user", "content": prompt_text.strip()})
-    st.session_state.thinking = True
-
-    # Build chat history context from recent messages (last 10 exchanges)
+def build_question_with_history(prompt_text: str) -> str:
+    """Builds a question string that includes recent chat history for context."""
     history_messages = st.session_state.messages[:-1]  # Exclude the current question
-    history_context = ""
     recent = history_messages[-20:]  # Last 10 pairs
-    if recent:
-        history_parts = []
-        for msg in recent:
-            role_label = "User" if msg["role"] == "user" else "Assistant"
-            history_parts.append(f"{role_label}: {msg['content'][:500]}")
-        history_context = "\n".join(history_parts)
-
-    # Prepend history context to the question so the LLM has memory
-    question_with_context = prompt_text.strip()
-    if history_context:
-        question_with_context = f"[CONVERSATION HISTORY]\n{history_context}\n[END HISTORY]\n\nCurrent question: {prompt_text.strip()}"
-
-    try:
-        response = requests.post(f"{API_URL}/ask", json={"question": question_with_context}, timeout=120)
-        if response.status_code == 200:
-            data = response.json()
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": data.get("answer", ""),
-                "sources": data.get("sources", [])
-            })
-        else:
-            error_detail = response.json().get("detail", "Failed to retrieve answer.")
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": f"Notice: {error_detail}"
-            })
-    except Exception as e:
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": f"Connection error: {e}"
-        })
-    finally:
-        st.session_state.thinking = False
+    if not recent:
+        return prompt_text.strip()
+    history_parts = []
+    for msg in recent:
+        role_label = "User" if msg["role"] == "user" else "Assistant"
+        history_parts.append(f"{role_label}: {msg['content'][:500]}")
+    history_context = "\n".join(history_parts)
+    return f"[CONVERSATION HISTORY]\n{history_context}\n[END HISTORY]\n\nCurrent question: {prompt_text.strip()}"
 
 # --- Custom ChatGPT Minimalist Theme & UI Polish ---
 st.markdown(
@@ -555,6 +519,37 @@ st.markdown(
         50% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
         100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
     }
+
+    /* --- Thinking / Searching Animation --- */
+    .thinking-indicator {
+        padding: 8px 0;
+    }
+    .thinking-dots {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+    .thinking-dots span {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #8e8ea0;
+        animation: thinkingBounce 1.4s infinite ease-in-out;
+    }
+    .thinking-dots span:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    .thinking-dots span:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    @keyframes thinkingBounce {
+        0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+        40% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -681,7 +676,7 @@ with st.sidebar:
                         f_mime = f_item.type or "application/octet-stream"
                         file_payload = {"file": (f_item.name, f_item.getvalue(), f_mime)}
                         try:
-                            resp = requests.post(f"{API_URL}/documents/upload", files=file_payload, timeout=60)
+                            resp = requests.post(f"{API_URL}/documents/upload", files=file_payload, timeout=300)
                             if resp.status_code == 200:
                                 indexed_count += 1
                             else:
@@ -826,24 +821,7 @@ else:
                     unsafe_allow_html=True
                 )
 
-    # Show thinking animation if waiting for AI response
-    if st.session_state.thinking:
-        with st.chat_message("assistant"):
-            st.markdown(
-                """
-                <div class="thinking-indicator">
-                    <div class="thinking-dots">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </div>
-                    <div class="thinking-label">Thinking...</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-# --- TEXT & VOICE CHAT INPUT (Native In-Bar Microphone) ---
+# --- TEXT & VOICE CHAT INPUT (with real-time thinking animation) ---
 if user_prompt := st.chat_input("Ask a question about your documents...", accept_audio=True):
     query_text = ""
     if isinstance(user_prompt, str):
@@ -874,7 +852,70 @@ if user_prompt := st.chat_input("Ask a question about your documents...", accept
                     st.error(f"Transcription connection error: {ex}")
                     
     if query_text:
-        submit_query(query_text)
+        # 1. Add user message to state and display it immediately
+        st.session_state.messages.append({"role": "user", "content": query_text})
+        with st.chat_message("user"):
+            st.markdown(query_text)
+
+        # 2. Show real-time thinking animation while making API call
+        with st.chat_message("assistant"):
+            thinking_placeholder = st.empty()
+            thinking_placeholder.markdown(
+                """
+                <div class="thinking-indicator">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8e8ea0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1.5s linear infinite;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 6v6l4 2"></path>
+                        </svg>
+                        <span style="color: #8e8ea0; font-size: 0.9rem;">Searching through your documents...</span>
+                    </div>
+                    <div class="thinking-dots" style="margin-top: 8px;">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            # 3. Build question with history context and make API call
+            question_with_context = build_question_with_history(query_text)
+            answer = ""
+            sources = []
+            try:
+                response = requests.post(
+                    f"{API_URL}/ask",
+                    json={"question": question_with_context},
+                    timeout=180
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    answer = data.get("answer", "")
+                    sources = data.get("sources", [])
+                else:
+                    answer = f"Notice: {response.json().get('detail', 'Failed to retrieve answer.')}"
+            except Exception as e:
+                answer = f"Connection error: {e}"
+
+            # 4. Replace thinking animation with the actual answer
+            thinking_placeholder.markdown(answer)
+
+            # 5. Show sources if any
+            if sources:
+                valid_sources = [s for s in sources if s.get("source") in active_doc_names]
+                if valid_sources:
+                    with st.expander("Sources & Citations", expanded=False):
+                        for src in valid_sources:
+                            st.markdown(f"- **{src['source']}** (Page {src['page']})")
+
+        # 6. Save assistant response to state
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": answer,
+            "sources": sources
+        })
         st.rerun()
 
 # --- JAVASCRIPT: REDIRECT GREEN BOX TO FILE MANAGER & INJECT IN-BAR MIC ---
