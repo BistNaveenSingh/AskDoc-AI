@@ -47,7 +47,7 @@ def transcribe_image_bytes(image_bytes: bytes, mime_type: str = "image/png", con
             "Return clean, comprehensive, verbatim text without commentary."
         )
         
-        model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+        model_name = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
         try:
             response = client.models.generate_content(
                 model=model_name,
@@ -61,7 +61,7 @@ def transcribe_image_bytes(image_bytes: bytes, mime_type: str = "image/png", con
             # Fallback to flash-lite if rate limit or quota encountered
             print(f"Notice: Primary model {model_name} error: {primary_err}, attempting fallback...")
             response = client.models.generate_content(
-                model="gemini-1.5-flash",
+                model="gemini-3.8-flash",
                 contents=[
                     types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
                     prompt

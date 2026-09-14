@@ -157,7 +157,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
             client = genai.Client(api_key=gemini_key)
             mime_type = file.content_type or "audio/wav"
             
-            model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+            model_name = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
             try:
                 try:
                     response = client.models.generate_content(
@@ -170,7 +170,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
                 except Exception as primary_err:
                     print(f"Notice: Primary model {model_name} error: {primary_err}, attempting fallback...")
                     response = client.models.generate_content(
-                        model="gemini-1.5-flash",
+                        model="gemini-3.8-flash",
                         contents=[
                             types.Part.from_bytes(data=audio_bytes, mime_type=mime_type),
                             "Please transcribe the spoken speech in this audio accurately. Return ONLY the transcribed text without quotes or commentary."
